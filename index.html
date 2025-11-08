@@ -835,22 +835,34 @@
             font-size: 1.5rem;
             cursor: pointer;
             color: var(--primary);
+            padding: 0.5rem;
+            border: none;
+            background: none;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .menu-toggle:hover {
+            transform: scale(1.1);
         }
 
         .nav-links {
             display: flex;
             gap: 2rem;
+            align-items: center;
         }
 
         .nav-links a {
             color: var(--secondary);
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.3s ease;
+            transition: color 0.3s ease, transform 0.3s ease;
+            padding: 0.5rem;
         }
 
         .nav-links a:hover {
             color: var(--primary);
+            transform: translateY(-2px);
         }
 
         /* Estilos para el menú móvil */
@@ -870,10 +882,31 @@
                 flex-direction: column;
                 gap: 1rem;
                 box-shadow: var(--shadow);
+                opacity: 0;
+                transform: translateY(-10px);
+                transition: opacity 0.3s ease, transform 0.3s ease;
+                z-index: 999;
             }
 
             .nav-links.show {
                 display: flex;
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            .nav-links a {
+                width: 100%;
+                text-align: left;
+                padding: 0.75rem;
+                border-radius: 0.5rem;
+                background-color: transparent;
+                transition: background-color 0.3s ease, color 0.3s ease;
+            }
+
+            .nav-links a:hover {
+                background-color: var(--primary);
+                color: var(--white);
+                transform: none;
             }
         }
     </style>
@@ -1519,9 +1552,44 @@
         }
 
         // LÓGICA PARA CAMBIAR TÍTULOS SEGÚN LA LOCALIDAD (MARKETPLACE)
+        /*
+        * GUÍA DE USO - LOCALIDADES DE CÓRDOBA
+        * Para mostrar una localidad específica, usar la URL con el parámetro 'ciudad':
+        * 
+        * Ejemplos de URLs:
+        * - Para Córdoba Capital: index.html?ciudad=Cordoba Capital
+        * - Para Villa María: index.html?ciudad=Villa Maria
+        * - Para Rio Cuarto: index.html?ciudad=Rio Cuarto
+        * - Para Villa Carlos Paz: index.html?ciudad=Villa Carlos Paz
+        * - Para Alta Gracia: index.html?ciudad=Alta Gracia
+        * - Para Jesús María: index.html?ciudad=Jesus Maria
+        * - Para La Falda: index.html?ciudad=La Falda
+        * - Para Bell Ville: index.html?ciudad=Bell Ville
+        * 
+        * El parámetro 'ciudad' en la URL determina:
+        * 1. El título de la página
+        * 2. El texto del encabezado
+        * 3. El nombre del marketplace
+        * 4. El contenido del footer
+        */
         function setMarketTitlesFromQuery() {
             const params = new URLSearchParams(window.location.search);
             const ciudad = params.get('ciudad');
+            
+            // Asegurarse de que el menú hamburguesa funcione igual para todas las ciudades
+            const menuToggle = document.getElementById('menuToggle');
+            const navLinks = document.getElementById('navLinks');
+            
+            // Configurar el menú para todas las ciudades, incluyendo Córdoba Capital
+            if (menuToggle && navLinks) {
+                menuToggle.style.display = window.innerWidth <= 768 ? 'block' : 'none';
+                if (ciudad === 'Cordoba Capital') {
+                    // Asegurarse de que Córdoba Capital tenga el mismo comportamiento
+                    navLinks.classList.remove('special-menu');
+                    menuToggle.setAttribute('data-city', 'cordoba-capital');
+                }
+            }
+
             if (ciudad) {
                 // Cambia el <title>
                 document.title = ciudad + ' Marketplace';
@@ -1550,9 +1618,21 @@
             }
         }
         document.addEventListener('DOMContentLoaded', () => {
-            // ...existing code...
+            // Inicializar el menú para todas las ciudades
+            const params = new URLSearchParams(window.location.search);
+            const ciudad = params.get('ciudad');
+            const menuToggle = document.getElementById('menuToggle');
+            const navLinks = document.getElementById('navLinks');
+
+            if (menuToggle && navLinks) {
+                // Configuración inicial del menú
+                menuToggle.style.display = window.innerWidth <= 768 ? 'block' : 'none';
+                if (ciudad === 'Cordoba Capital') {
+                    navLinks.style.display = window.innerWidth > 768 ? 'flex' : 'none';
+                }
+            }
+
             setMarketTitlesFromQuery();
-            // ...existing code...
         });
 
         // -----------------------------
@@ -1627,35 +1707,65 @@
             const menuToggle = document.getElementById('menuToggle');
             const navLinks = document.getElementById('navLinks');
             
-            menuToggle.addEventListener('click', () => {
-                navLinks.classList.toggle('show');
-            });
-
-            // Cerrar el menú al hacer clic en un enlace
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', () => {
+            if (menuToggle && navLinks) {
+                // Asegurar que el menú esté visible inicialmente en modo desktop
+                if (window.innerWidth > 768) {
                     navLinks.classList.remove('show');
+                }
+
+                menuToggle.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevenir que el click se propague
+                    navLinks.classList.toggle('show');
                 });
-            });
 
-            // Cerrar el menú al hacer clic fuera de él
-            document.addEventListener('click', (e) => {
-                if (!navLinks.contains(e.target) && !menuToggle.contains(e.target)) {
-                    navLinks.classList.remove('show');
-                }
-            });
-        });
-
-        // Smooth scroll para los enlaces
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth'
+                // Cerrar el menú al hacer clic en un enlace
+                navLinks.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (window.innerWidth <= 768) {
+                            navLinks.classList.remove('show');
+                        }
                     });
-                }
+                });
+
+                // Cerrar el menú al hacer clic fuera de él
+                document.addEventListener('click', (e) => {
+                    if (!navLinks.contains(e.target) && !menuToggle.contains(e.target)) {
+                        if (window.innerWidth <= 768) {
+                            navLinks.classList.remove('show');
+                        }
+                    }
+                });
+
+                // Manejar cambios de tamaño de ventana
+                window.addEventListener('resize', () => {
+                    const params = new URLSearchParams(window.location.search);
+                    const ciudad = params.get('ciudad');
+                    
+                    // Actualizar visibilidad del menú para todas las ciudades
+                    menuToggle.style.display = window.innerWidth <= 768 ? 'block' : 'none';
+                    
+                    if (window.innerWidth > 768) {
+                        navLinks.classList.remove('show');
+                    }
+                    
+                    // Asegurar comportamiento consistente para Córdoba Capital
+                    if (ciudad === 'Cordoba Capital') {
+                        navLinks.style.display = window.innerWidth > 768 ? 'flex' : 'none';
+                    }
+                });
+            }
+
+            // Smooth scroll para los enlaces
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                });
             });
         });
     </script>
